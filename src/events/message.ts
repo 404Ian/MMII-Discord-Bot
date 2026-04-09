@@ -29,21 +29,24 @@ export default {
         const name = message.channel.name || "unk";
         const type = name.includes("add") ? "add" : name.includes("remove") ? "remove" : "unk";
         const separators = ["-#", ":", "-"];
-
         let separatorIndex = -1;
+        let usedSeparator: string | null = null;
+
         for (const sep of separators) {
             const idx = message.content.indexOf(sep);
             if (idx !== -1) {
                 separatorIndex = idx;
-                break; // stop at the first separator one found
+                usedSeparator = sep;
+                break;
             }
         }
-        if (separatorIndex === -1) return;
+
+        if (separatorIndex === -1 || !usedSeparator) return;
+        let [word, reason] = message.content.split(usedSeparator);
+        word = word.trim().toLowerCase();
+        reason = reason.trim();
 
         if (type === "unk") return; // Unknown channel type, ignore
-        const word = message.content.slice(0, separatorIndex).trim().toLowerCase();
-        const reason = message.content.slice(separatorIndex + 1).trim() || "No reason provided.";
-
         if (!word) {
             const reply = await message.reply({
                 components: [logger.info_container(`Please provide a word.`, `Usage: \`<word>: <reason (optional)>\``)],
