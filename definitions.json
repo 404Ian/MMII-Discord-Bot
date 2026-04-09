@@ -1,0 +1,45 @@
+{
+  "a": {
+    "word": "a",
+    "phonetics": {
+      "text": "/eɪ/",
+      "audio": "https://api.dictionaryapi.dev/media/pronunciations/en/a-1-us.mp3"
+    },
+    "source": "DictionaryAPI",
+    "meanings": [
+      {
+        "partOfSpeech": "Noun",
+        "definitions": [
+          "The name of the Latin script letter A/a."
+        ]
+      }
+    ]
+  },
+  "l": {
+    "word": "l",
+    "phonetics": null,
+    "source": "DictionaryAPI",
+    "meanings": [
+      {
+        "partOfSpeech": "Noun",
+        "definitions": [
+          "Litre, liter",
+          "Pound (sterling) (from Latin libra)"
+        ]
+      }
+    ]
+  },
+  "https": {
+    "word": "https",
+    "phonetics": null,
+    "source": "FreeDictionaryAPI",
+    "meanings": [
+      {
+        "partOfSpeech": "Name",
+        "definitions": [
+          "(Internet, in addresses) Alternative letter-case form of HTTPS."
+        ]
+      }
+    ]
+  }
+}
