@@ -99,42 +99,79 @@ export default {
                         .filter(Boolean);
                 }
 
+                if (customId.startsWith('approve') || customId.startsWith('deny')) {
+                const args = customId.split("|");
+                const action = args[0];
+                const word = args[1];
+                const userId = args[args.length - 1];
+                const type = action.includes("add") ? "add" : "remove";
+                const pendingType = type === "add" ? "addition" : "removal";
+                if (userId !== interaction.user.id) {
+                    return interaction.reply({
+                        components: [logger.info_container('This interaction is not for you.')],
+                        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+                    });
+                }
+
+                const pendingCache = PendingCache.getInstance();
+                const pending = pendingCache.get(word);
+
+                if (!pending) {
+                    return interaction.reply({
+                        content: `❌ **${word}** is not pending any action.`,
+                        ephemeral: true
+                    });
+                }
+
+                const data = JSON.parse(pending.value);
+                const msgId = data.msgId;
+                const channelId = type === "add" ? config.AddChannel : config.RemoveChannel;
+
+                async function reactToOriginal(emoji: string) {
+                    if (!msgId) {console.log("Returning early: msgId is falsy"); return;}
+                    try {
+                        const targetChannel = await interaction.client.channels.fetch(channelId);
+
+                        if (targetChannel && targetChannel.isTextBased()) {
+                            const msg = await targetChannel.messages.fetch(msgId);
+                            await msg.reactions.removeAll().catch(() => { });
+                            await msg.react(emoji);
+                        }
+                    } catch (err) {
+                        console.log("Failed to fetch/react message:", err);
+                    }
+                }
+
+                // Load dictionary
+                let dictionary: string[] = [];
+                if (fs.existsSync(config.DictionaryFile)) {
+                    dictionary = fs.readFileSync(config.DictionaryFile, "utf8")
+                        .split(/\r?\n/)
+                        .map(w => w.trim())
+                        .filter(Boolean);
+                }
+
                 if (action.startsWith('approve')) {
-                    console.log(type)
                     if (type === 'add') {
-                        // add
-                        if (msgId) {
-                            try {
-                                const msg = await interaction.channel?.messages.fetch(msgId);
-                                await msg?.react("✅");
-                            } catch { }
-                        }
-                        if (!dictionary.includes(word)) {
-                            dictionary.push(word);
-                            fs.writeFileSync(dictPath, dictionary.join("\n"), "utf8");
-                        }
+                        await reactToOriginal("✅");
+                        if (!dictionary.includes(word)) dictionary.push(word);
                     } else {
-                        // remove
-                        if (msgId) {
-                            try {
-                                const msg = await interaction.channel?.messages.fetch(msgId);
-                                await msg?.react("❌");
-                            } catch { }
-                        }
+                        await reactToOriginal("✅");
                         dictionary = dictionary.filter(w => w.toLowerCase() !== word.toLowerCase());
-                        fs.writeFileSync(dictPath, dictionary.join("\n"), "utf8");
                     }
 
+                    fs.writeFileSync(config.DictionaryFile, dictionary.join("\n"), "utf8");
                     pendingCache.delete(word);
-
-                    return await interaction.update({
+                    return interaction.update({
                         components: [logger.info_container(`✅ **${word}** has been approved for ${pendingType}.`, `Accepted by ${interaction.user.tag}.`, true)],
                         flags: MessageFlags.IsComponentsV2
                     });
-                } else if (action.startsWith('deny')) {
-                    pendingCache.delete(word);
+                }
 
-                    return await interaction.update({
+                if (action.startsWith('deny')) {
+                    pendingCache.delete(word);
+                    await reactToOriginal("❌");
+                    return interaction.update({
                         components: [logger.info_container(`❌ **${word}** has been denied.`, `Denied by ${interaction.user.tag}.`, true)],
                         flags: MessageFlags.IsComponentsV2
                     });
